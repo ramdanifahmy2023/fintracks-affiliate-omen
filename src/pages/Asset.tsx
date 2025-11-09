@@ -388,13 +388,8 @@ const Assets = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Tanggal Beli</TableHead>
-                        <TableHead>Nama Aset</TableHead>
-                        <TableHead>Kategori</TableHead>
-                        <TableHead>Diberikan Kepada</TableHead>
-                        <TableHead>Kondisi</TableHead>
-                        <TableHead className="text-right">Total Harga</TableHead> {/* <-- Simplified Header */}
-                        <TableHead className="text-center">Actions</TableHead>
+                        {/* PERBAIKAN: Menghilangkan spasi putih antar elemen */}
+                        <TableHead>Tanggal Beli</TableHead><TableHead>Nama Aset</TableHead><TableHead>Kategori</TableHead><TableHead>Diberikan Kepada</TableHead><TableHead>Kondisi</TableHead><TableHead className="text-right">Total Harga</TableHead><TableHead className="text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -407,26 +402,21 @@ const Assets = () => {
                       )}
                       {filteredAssets.map((asset) => (
                         <TableRow key={asset.id}>
-                          <TableCell>{formatDate(asset.purchase_date)}</TableCell>
-                          <TableCell className="font-medium">{asset.name}</TableCell>
-                          <TableCell>
+                          {/* PERBAIKAN: Menghilangkan spasi putih antar elemen */}
+                          <TableCell>{formatDate(asset.purchase_date)}</TableCell><TableCell className="font-medium">{asset.name}</TableCell><TableCell>
                             <Badge variant="outline">{asset.category}</Badge>
-                          </TableCell>
-                          <TableCell>
+                          </TableCell><TableCell>
                             {(asset as any).assigned_to_name || '-'}
-                          </TableCell>
-                          <TableCell>
+                          </TableCell><TableCell>
                             <Badge 
                               variant={asset.condition === "Baru" ? "default" : (asset.condition === "Bekas" ? "secondary" : "outline")}
                               className={cn(asset.condition === "Baru" ? "bg-green-600 hover:bg-green-600/90" : "")}
                             >
                               {asset.condition || "-"}
                             </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
+                          </TableCell><TableCell className="text-right font-medium">
                             {formatCurrency(asset.purchase_price)}
-                          </TableCell>
-                          <TableCell className="text-center">
+                          </TableCell><TableCell className="text-center">
                             {canManageAssets ? (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
