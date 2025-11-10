@@ -1,4 +1,5 @@
-// File: ramdanifahmy2023/affstudiofahmyv2-main/affstudiofahmyv2-main-0cf4e2de727adf0e0171efcb1d3ba596c76c8cce/src/pages/Attendance.tsx
+// File: src/pages/Attendance.tsx
+// (Sudah diperbaiki)
 
 import { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "@/components/Layout/MainLayout";
@@ -69,8 +70,15 @@ const Attendance = () => {
     // --- HELPER UNTUK FORMAT WAKTU ---
     const formatTime = (isoString: string | null) => {
         if (!isoString) return '-';
-        // Hanya tampilkan waktu (HH:MM)
-        return format(new Date(isoString), 'HH:mm');
+        
+        // Cek jika ini sudah format HH:mm:ss atau timestamp
+        if (isoString.includes('T')) {
+            // Jika ini timestamp (dari data lama/check-out)
+            return format(new Date(isoString), 'HH:mm');
+        }
+        // Jika ini sudah HH:mm:ss (dari data baru/check-in)
+        // Kita hanya perlu mengambil HH:mm
+        return isoString.substring(0, 5); // "10:45:30" -> "10:45"
     }
     const formatDateOnly = (dateString: string) => {
         if (!dateString) return '-';
@@ -79,9 +87,15 @@ const Attendance = () => {
     // --- HELPER BARU: HITUNG DURASI ---
     const calculateDuration = (checkIn: string | null, checkOut: string | null) => {
         if (!checkIn || !checkOut) return '-';
+
+        // Kita perlu tanggal hari ini (atau tanggal absensi) untuk membuat objek Date yang valid
+        const today = format(new Date(), 'yyyy-MM-dd');
         
-        const start = new Date(checkIn);
-        const end = new Date(checkOut);
+        // Buat objek Date dari string waktu
+        const start = new Date(`${today}T${checkIn}`);
+        // Check-out mungkin masih dalam format ISO, tangani itu
+        const endString = checkOut.includes('T') ? checkOut : `${today}T${checkOut}`;
+        const end = new Date(endString);
         
         if (start.getTime() > end.getTime()) return '-';
         
@@ -108,14 +122,14 @@ const Attendance = () => {
         try {
             const { data } = await supabase
                 .from('attendance')
-                .select('check_in')
+                .select('check_in, check_out') // Ambil check_out juga
                 .eq('employee_id', employee.id)
                 .eq('attendance_date', today)
                 .maybeSingle();
 
-            if (data && data.check_in) {
+            if (data && data.check_in && !data.check_out) { // Sudah check-in TAPI belum check-out
                  setCurrentStatus('clockedIn');
-            } else {
+            } else { // Belum check-in ATAU sudah check-out
                  setCurrentStatus('clockedOut');
             }
         } catch(e) {
@@ -216,7 +230,10 @@ const Attendance = () => {
         
         setLoadingRecords(true);
         const today = format(new Date(), 'yyyy-MM-dd');
-        const currentTime = new Date().toISOString();
+        
+        // --- !!! PERBAIKAN DI SINI !!! ---
+        // Kita gunakan format HH:mm:ss sesuai tipe data kolom 'time' di database
+        const currentTime = format(new Date(), 'HH:mm:ss'); 
         
         try {
             const { data: existingData, error: checkError } = await supabase
@@ -241,7 +258,7 @@ const Attendance = () => {
                     .upsert({
                         employee_id: employee.id,
                         attendance_date: today,
-                        check_in: currentTime,
+                        check_in: currentTime, // Menggunakan format HH:mm:ss
                         status: 'present',
                     }, { onConflict: 'employee_id, attendance_date' });
                 
@@ -263,7 +280,7 @@ const Attendance = () => {
                  const { error: updateError } = await supabase
                     .from('attendance')
                     .update({
-                        check_out: currentTime,
+                        check_out: currentTime, // Menggunakan format HH:mm:ss
                     })
                     .eq('id', existingData.id); // Update record yang sudah ada
                     
@@ -295,7 +312,8 @@ const Attendance = () => {
                         <p className={cn("text-xl font-semibold mb-6 mt-6", 
                              currentStatus === 'clockedIn' ? 'text-success' : 'text-destructive'
                         )}>
-                            {currentStatus === 'clockedIn' ? 'ANDA SUDAH CHECK-IN' : 'ANDA BELUM CHECK-IN'}
+                            {/* Logika Tampilan Status diperbarui */}
+                            {currentStatus === 'clockedIn' ? 'ANDA SUDAH CHECK-IN' : 'ANDA BELUM CHECK-IN / SUDAH CHECK-OUT'}
                         </p>
                         
                         <div className="flex justify-center gap-4">
@@ -352,7 +370,7 @@ const Attendance = () => {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="filter-group">Group</Label>
-                            <Select value={filterGroup} onValueChange={setFilterGroup}>
+                            <Select value={filterGroup} onValueDChange={setFilterGroup}>
                                 <SelectTrigger id="filter-group"><SelectValue placeholder="Semua Group" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">Semua Group</SelectItem>

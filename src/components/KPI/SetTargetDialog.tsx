@@ -147,7 +147,9 @@ export const SetTargetDialog = ({ open, onOpenChange, onSuccess }: SetTargetDial
       const { error: upsertError } = await supabase
         .from("kpi_targets")
         .upsert(kpiPayload, {
-          onConflict: 'employee_id, target_month'
+          // PERBAIKAN FINAL: Gunakan nama kolom tanpa spasi. 
+          // Jika ini gagal lagi, ada masalah pada definisi UNIQUE constraint di database Supabase Anda.
+          onConflict: 'employee_id,target_month'
         });
 
       if (upsertError) throw upsertError;
